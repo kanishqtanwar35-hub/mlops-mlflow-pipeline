@@ -26,6 +26,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from src.mlops.appsec import validate_source_url
 from src.mlops.logger import logger
 
 REGISTRY = {
@@ -40,6 +41,9 @@ def ensure_data(url: str, local_path: Path, column_names) -> Path:
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
     if not local_path.exists():
+        # Validate before fetching: urlretrieve honours file:// and will follow
+        # a host resolving to the cloud metadata endpoint.
+        url = validate_source_url(url)
         logger.info("downloading %s", url)
         urllib.request.urlretrieve(url, local_path)
         if column_names:
