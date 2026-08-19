@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# Training and promotion policy.
+# ---------------------------------------------------------------------------
+
+split:
+  test_size: 0.2
+  random_state: 42
+
+model:
+  name: RandomForestClassifier
+  params:
+    n_estimators: 200
+    max_depth: 8
+    min_samples_leaf: 3
+    random_state: 42
+    n_jobs: -1
+
+# ---------------------------------------------------------------------------
+# The promotion gate. A candidate must clear ALL THREE bars to replace the
+# model currently serving production traffic.
+# ---------------------------------------------------------------------------
+promotion:
+  # The metric the decision is made on.
+  metric: f1
+
+  # Bar 1 — absolute floor. A model that beats a terrible incumbent is still
+  # terrible. This is the "is it good enough at all" question.
+  min_absolute: 0.60
+
+  # Bar 2 — improvement over the incumbent, which must exceed run-to-run noise.
+  # Set this from the standard deviation of repeated runs, not by taste. Set it
+  # to 0.0 and you will promote on randomness and fill the registry with churn.
+  min_improvement: 0.01
+
+  # Bar 3 — no single class may regress by more than this, even if the
+  # headline metric improved. An average can rise while the model stops
+  # working for a minority class entirely.
+  per_class_prefix: f1_class_
+  max_per_class_drop: 0.05

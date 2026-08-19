@@ -1,0 +1,70 @@
+name: MLOps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Scheduled retraining. The point is not that the data changed today — it is
+  # that a pipeline which only runs when someone remembers to run it is not a
+  # pipeline. This also catches dependency drift breaking training.
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Estimator to train"
+        required: false
+        default: RandomForestClassifier
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit-test the promotion policy
+        # These run against fake registry state, so they need no MLflow server
+        # and finish in seconds.
+        run: pytest -q
+
+  train-and-gate:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Train and register a candidate
+        run: python train.py --model "${{ github.event.inputs.model || 'RandomForestClassifier' }}"
+
+      - name: Promotion gate
+        # Exits 1 when the candidate fails the policy, which turns the build
+        # red rather than quietly shipping a worse model. --dry-run on PRs so
+        # a proposed change is evaluated without altering production.
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python promote.py --dry-run
+          else
+            python promote.py
+          fi
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-run
+          path: |
+            artifacts/
+            mlflow.db
+          if-no-files-found: ignore

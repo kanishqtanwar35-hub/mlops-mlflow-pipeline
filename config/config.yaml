@@ -1,0 +1,33 @@
+# ---------------------------------------------------------------------------
+# Tracking, data and registry locations.
+#
+# Nothing here identifies an account. MLFLOW_TRACKING_URI is read from the
+# environment and falls back to a local mlruns/ directory, so this runs offline
+# and in CI with no server. Hardcode a tracking URL and every fork of the repo
+# posts its metrics to your account.
+# ---------------------------------------------------------------------------
+
+experiment_name: churn-risk
+
+registry:
+  model_name: churn-risk-classifier
+
+data:
+  source_url: https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv
+  local_file: data/raw.csv
+  target_column: outcome
+  column_names:
+    - pregnancies
+    - glucose
+    - blood_pressure
+    - skin_thickness
+    - insulin
+    - bmi
+    - diabetes_pedigree
+    - age
+    - outcome
+
+artifacts:
+  root_dir: artifacts
+  metrics_file: artifacts/metrics.json
+  decision_file: artifacts/promotion_decision.json
