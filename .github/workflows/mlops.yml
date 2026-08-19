@@ -68,3 +68,34 @@ jobs:
             artifacts/
             mlflow.db
           if-no-files-found: ignore
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks needs full history: a secret removed in the latest commit
+          # is still in the repository and still compromised.
+          fetch-depth: 0
+
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit dependencies for known vulnerabilities
+        # pip-audit checks installed versions against the OSV database. It is
+        # advisory here rather than blocking, because a transitive advisory
+        # with no fix available should not stop you shipping - but you should
+        # know about it.
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --desc || true
