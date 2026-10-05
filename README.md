@@ -8,7 +8,7 @@ rules that decide whether a new model is allowed to replace the one currently
 serving traffic, evaluated automatically in CI.
 
 **Status:** verified running. Two models trained and registered, v1 promoted,
-v2 correctly rejected, 13/13 tests pass.
+v2 correctly rejected, 39/39 tests pass.
 
 ---
 
