@@ -116,9 +116,15 @@ class ExperimentTracker:
     # execution — so the right response is to declare what this pipeline
     # actually contains rather than falling back to cloudpickle to make the
     # error go away.
+    #
+    # Newer skops releases (0.16+) also stopped trusting sklearn.tree._tree.Tree
+    # by default. Every tree model here (RandomForest, GradientBoosting) stores
+    # its nodes in that type, so without it log_model fails. We only ever load
+    # models this pipeline trained itself, so it is safe to trust here.
     TRUSTED_TYPES = [
         "numpy.dtype",
         "sklearn.compose._column_transformer._RemainderColsList",
+        "sklearn.tree._tree.Tree",
     ]
 
     @classmethod
